@@ -6,9 +6,11 @@ class DropBoxController {
     this.progressBarEl = this.snackModalEl.querySelector(".mc-progress-bar-fg");
     this.nameFileEl = this.snackModalEl.querySelector(".filename");
     this.timeLeft = this.snackModalEl.querySelector(".timeleft");
+    this.listFilesEl = document.querySelector('#list-of-files-and-directories');
     
     this.connectFirebase();
-    this.initEvents(); 
+    this.initEvents();
+    this.readFiles();
   }
 
   initEvents() {
@@ -303,14 +305,32 @@ class DropBoxController {
     }
   }
 
-  getFileView(file) {
+  getFileView(file, key) {
+    let li = document.createElement('li');
+    li.dataset.key = key;
 
-    return `
-      <li>
-        ${this.getFileIconView(file)}
-        <div class="name text-center">${file.name}</div>
-    </li>
+    li.innerHTML = `
+      ${this.getFileIconView(file)}
+      <div class="name text-center">${file.name}</div>
     `;
-  }
 
-}
+    return li;
+  }
+  
+  readFiles() {
+    this.getFirebaseRef().on('value', snapshot => {
+
+      this.listFilesEl.innerHTML = '';
+
+      snapshot.forEach(snapItem => {
+        
+        let key = snapItem.key;
+        let data = snapItem.val();
+
+        this.listFilesEl.appendChild(this.getFileView(data, key));
+        
+        console.log(key, data)
+      });
+    });
+  }
+};
