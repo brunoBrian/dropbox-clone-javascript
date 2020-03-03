@@ -6,7 +6,8 @@ class DropBoxController {
     this.progressBarEl = this.snackModalEl.querySelector(".mc-progress-bar-fg");
     this.nameFileEl = this.snackModalEl.querySelector(".filename");
     this.timeLeft = this.snackModalEl.querySelector(".timeleft");
-
+    
+    this.connectFirebase();
     this.initEvents(); 
   }
 
@@ -16,14 +17,47 @@ class DropBoxController {
     });
 
     this.inputFilesEl.addEventListener('change', event => {
-      this.uploadTasks(event.target.files);
+      this.btnSendFileEl.disabled = true;
+      this.uploadTasks(event.target.files).then(responses => {
+        responses.forEach(response => {
+          this.getFirebaseRef().push().set(response.files['input-file']);
+        });
+
+        this.uploadComplete();
+
+      }).catch(error => {
+        this.uploadComplete();
+        console.log(error);
+      });
       this.modalShow();
-      this.inputFilesEl.value = '';
     });
   }
 
+  getFirebaseRef() {
+    return firebase.database().ref('files');
+  }
+
+  connectFirebase() {
+    var firebaseConfig = {
+      apiKey: "AIzaSyAF0ME2R8-PxrLm2KrSb9shp5lm_zZ8NnE",
+      authDomain: "dropbox-clone-63734.firebaseapp.com",
+      databaseURL: "https://dropbox-clone-63734.firebaseio.com",
+      projectId: "dropbox-clone-63734",
+      storageBucket: "dropbox-clone-63734.appspot.com",
+      messagingSenderId: "599810925451",
+      appId: "1:599810925451:web:a2bfd4b026e9d844fd858e"
+    };
+    firebase.initializeApp(firebaseConfig);
+  };
+
   modalShow(show=true) {
     this.snackModalEl.style.display = show ? 'block' : 'none';
+  }
+
+  uploadComplete() {
+    this.modalShow(false);
+    this.inputFilesEl.value = '';
+    this.btnSendFileEl.disabled = false;
   }
 
   uploadTasks(files) {
@@ -36,7 +70,6 @@ class DropBoxController {
         ajax.open('POST', '/upload');
 
         ajax.onload = event => {
-          this.modalShow(false);
 
           try {
             resolve(JSON.parse(ajax.responseText));
@@ -46,7 +79,6 @@ class DropBoxController {
         };
 
         ajax.onerror = event => {
-          this.modalShow(false);
 
           reject(event);
         };
